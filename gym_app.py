@@ -20,8 +20,8 @@ def initialize_data():
         # Preloaded Admin & Trainer Credentials
         st.session_state.admins = [{'username': 'admin', 'password': 'password123', 'name': 'Adarsh'}]
         st.session_state.trainers = [
-            {'ID': 101, 'Name': 'Karthik Murali', 'Specialization': 'CrossFit', 'username': 'karthik', 'password': 'pass'},
-            {'ID': 102, 'Name': 'Lakshmi Devi', 'Specialization': 'Yoga & Pilates', 'username': 'lakshmi', 'password': 'pass'},
+            {'ID': 101, 'Name': 'Karthik Murali', 'Specialization': 'CrossFit', 'username': 'karthik', 'password': 'pass', 'Uploaded Photo': None, 'Photo URL': 'https://api.dicebear.com/8.x/avataaars/svg?seed=Karthik'},
+            {'ID': 102, 'Name': 'Lakshmi Devi', 'Specialization': 'Yoga & Pilates', 'username': 'lakshmi', 'password': 'pass', 'Uploaded Photo': None, 'Photo URL': 'https://api.dicebear.com/8.x/avataaars/svg?seed=Lakshmi'},
         ]
         
         # Preloaded Member Data with South Indian Names & Detailed Profiles
@@ -199,6 +199,8 @@ def login_register_page(role):
                         st.session_state.badges[new_id] = []
                         st.session_state.body_metrics[new_id] = []
                         st.session_state.progress_photos[new_id] = []
+                        st.session_state.member_plans[new_id] = []
+                        st.session_state.community_posts.append({'user': name, 'text': f"Welcome to the hub!", 'date': datetime.now()})
                         st.success(f"Registration successful! Your new Member ID is {new_id} and your username is '{username}'. Please log in.")
                         st.rerun()
                 else:
@@ -346,6 +348,8 @@ def membership_management():
                         st.session_state.badges[new_id] = []
                         st.session_state.body_metrics[new_id] = []
                         st.session_state.progress_photos[new_id] = []
+                        st.session_state.member_plans[new_id] = []
+                        st.session_state.community_posts.append({'user': name, 'text': f"Welcome to the hub!", 'date': datetime.now()})
                         st.success(f"Registration successful! Your new Member ID is {new_id} and your username is '{username}'. Please log in.")
                         st.rerun()
                 else:
@@ -388,7 +392,7 @@ def trainer_management():
 
             if st.form_submit_button("Add Trainer"):
                 new_id = max(t['ID'] for t in st.session_state.trainers) + 1 if st.session_state.trainers else 101
-                new_trainer = {'ID': new_id, 'Name': name, 'Specialization': specialization, 'username': name.lower().replace(' ', ''), 'password': 'pass'}
+                new_trainer = {'ID': new_id, 'Name': name, 'Specialization': specialization, 'username': name.lower().replace(' ', ''), 'password': 'pass', 'Uploaded Photo': None, 'Photo URL': f"https://api.dicebear.com/8.x/avataaars/svg?seed={name.split(' ')[0]}"}
                 st.session_state.trainers.append(new_trainer)
                 st.success(f"Successfully added trainer {name}.")
                 st.rerun()
@@ -483,6 +487,10 @@ def trainer_view():
         return
 
     st.sidebar.title("Trainer Menu")
+    if trainer.get('Uploaded Photo'):
+        st.sidebar.image(trainer.get('Uploaded Photo'), width=100)
+    else:
+        st.sidebar.image(trainer.get('Photo URL', ''), width=100)
     st.sidebar.header(trainer['Name'])
     st.sidebar.markdown("---")
     page = st.sidebar.radio("Navigate", ["My Dashboard", "My Profile", "My Members", "Pending Requests"])
@@ -504,16 +512,29 @@ def trainer_view():
     
     elif page == "My Profile":
         st.title("Trainer Profile")
-        st.subheader("Edit Your Profile")
-        with st.form("trainer_profile_form"):
-            new_name = st.text_input("Name", value=trainer['Name'])
-            new_specialization = st.text_input("Specialization", value=trainer['Specialization'])
-            if st.form_submit_button("Update Profile"):
-                trainer['Name'] = new_name
-                trainer['Specialization'] = new_specialization
-                st.session_state.current_trainer_id = trainer['ID']
-                st.success("Trainer profile updated successfully!")
+        col1, col2 = st.columns([1,2])
+        with col1:
+            if trainer.get('Uploaded Photo'):
+                st.image(trainer.get('Uploaded Photo'), caption="Profile Photo", width=200)
+            else:
+                st.image(trainer.get('Photo URL', ''), caption="Profile Photo", width=200)
+
+            uploaded_file = st.file_uploader("Upload a profile photo", type=["png", "jpg", "jpeg"])
+            if uploaded_file is not None:
+                trainer['Uploaded Photo'] = uploaded_file.getvalue()
+                st.success("Photo uploaded successfully! Refresh the page to see the new profile picture.")
                 st.rerun()
+        with col2:
+            st.subheader("Edit Your Profile")
+            with st.form("trainer_profile_form"):
+                new_name = st.text_input("Name", value=trainer['Name'])
+                new_specialization = st.text_input("Specialization", value=trainer['Specialization'])
+                if st.form_submit_button("Update Profile"):
+                    trainer['Name'] = new_name
+                    trainer['Specialization'] = new_specialization
+                    st.session_state.current_trainer_id = trainer['ID']
+                    st.success("Trainer profile updated successfully!")
+                    st.rerun()
     
     elif page == "My Members":
         st.title("My Members")
